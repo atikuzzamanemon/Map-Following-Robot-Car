@@ -1,0 +1,123 @@
+import pygame
+import serial
+from time import sleep
+
+PORT = "COM4"
+BUADRATE = 9600
+
+
+pygame.init()
+robot = serial.Serial(PORT, BUADRATE) 
+
+window = pygame.display.set_mode((700, 400)) 
+
+bg = pygame.image.load("track1.png")
+car = pygame.image.load("car.png")
+car = pygame.transform.scale(car, (40, 40))
+
+
+clock = pygame.time.Clock()
+
+car_x = 30
+car_y = 260
+
+JUMP_VALUE = 25  
+direction = 'y_up'  
+run = 1
+
+robot.write(b'f')
+DELAY = .400
+
+while run:
+    clock.tick(30)  
+  
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+            run = 0
+
+    
+    window.blit(bg, (0, 0)) 
+    window.blit(car, (car_x, car_y)) 
+
+    last_x, last_y = car_x, car_y
+
+    center_x, center_y = (int(car_x + 40 / 2), int(car_y + 40 / 2))
+    pygame.draw.circle(window, (0, 255, 255), (center_x, center_y), 5, 5)
+
+    
+    cal_value = 30 
+    y_up = window.get_at((center_x, center_y - cal_value))[0]
+    y_down = window.get_at((center_x, center_y + cal_value))[0]
+    x_right = window.get_at((center_x + cal_value, center_y))[0]
+    x_left = window.get_at((center_x - cal_value, center_y))[0]
+
+    if y_up == 255 and direction == 'y_up' and x_left != 255 and x_right != 255:
+  
+        car_y -= 2 
+
+   
+    if y_up == 255 and direction == 'y_up' and x_left != 255 and x_right == 255:
+        direction = 'x_right'
+        car_y -= JUMP_VALUE
+        car_x += JUMP_VALUE
+        car = pygame.transform.rotate(car, -90)
+        window.blit(car, (car_x, car_y))
+        print('Turn Right')
+        robot.write(b'r')
+        sleep(DELAY)
+        robot.write(b'f')
+
+   
+    if y_up != 255 and direction == 'x_right' and y_down != 255 and x_right == 255:
+        car_x += 2
+
+    if y_down == 255 and direction == 'x_right' and x_left == 255 and x_right == 255:
+       
+        car = pygame.transform.rotate(car, -90)
+        direction = 'y_down'
+        car_y += JUMP_VALUE + 5
+        car_x += JUMP_VALUE
+        window.blit(car, (car_x, car_y))
+        print('Turn Right')
+        robot.write(b'r')
+        sleep(DELAY)
+        robot.write(b'f')
+
+  
+    if y_down == 255 and direction == 'y_down' and x_left != 255 and x_right != 255:
+        
+        car_y += 2
+
+   
+    if y_down == 255 and direction == 'y_down' and x_left != 255 and x_right == 255:
+      
+        car = pygame.transform.rotate(car, 90)
+        direction = 'x_right'
+        car_y += JUMP_VALUE
+        car_x += JUMP_VALUE
+        print('Turn left')
+        robot.write(b'l')
+        sleep(DELAY)
+        robot.write(b'f')
+
+  
+    if y_up == 255 and direction == 'x_right' and x_left == 255 and x_right == 255:
+       
+        car = pygame.transform.rotate(car, 90)
+        direction = 'y_up'
+        car_y -= JUMP_VALUE + 5
+        car_x += JUMP_VALUE
+        print('Turn left')
+        robot.write(b'l')
+        sleep(DELAY)
+        robot.write(b'f')
+
+    if car_x == last_x and car_y == last_y:
+      
+        print("STOPPED")
+        robot.write(b's')
+
+    pygame.display.update() 
+
+pygame.quit() 
